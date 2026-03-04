@@ -1,0 +1,11 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# environment
+venv/
+.env
+
+# database and vector db
+*.db
+chroma_clinic_db/
