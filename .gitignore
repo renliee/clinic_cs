@@ -9,3 +9,6 @@ venv/
 # database and vector db
 *.db
 chroma_clinic_db/
+
+#project's note
+notes.txt
