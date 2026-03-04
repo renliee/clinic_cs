@@ -140,7 +140,8 @@ def handle_message(user_id: str, message: str) -> str:
     
     #if user want to reschedule
     if intent == "RESCHEDULE":
-        return "Untuk reschedule, bisa tolong hubungi nomor WA 087758482392 ya kak"
+        from config import PHONE_NUMBER
+        return f"Untuk reschedule, bisa tolong hubungi nomor WA {PHONE_NUMBER} ya kak"
     
     #if unclear
     return "Maaf kak saya kurang paham. Mau lanjut booking treatment atau tanya info?"
@@ -246,7 +247,8 @@ Terima kasih! 🙏"""
     
     except Exception as e:
         print(f"Booking error: {e}")
-        return "Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA 0812-8888-7654"
+        from config import PHONE_NUMBER
+        return f"Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA {PHONE_NUMBER}"
 
 #HANDLE BOOKING: extract messagae -> validate -> update -> ask missing
 def _handle_booking(session: BookingSession, message: str) -> str:
@@ -316,7 +318,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
             session.time_ambiguous_when = datetime.utcnow()
         
         return f"Maksud kakak jam berapa ya?\n{options}\n\nBalas angka '1' atau '2' aja ya kak"
-    
+
     #6. check if all slots is filled
     missing_slots = session.get_missing_slots() #return list of missing slots
     if missing_slots:

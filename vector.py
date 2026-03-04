@@ -3,9 +3,10 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader #TextLoader: to read/load txt files
 from langchain_text_splitters import CharacterTextSplitter #splitter text for llm
 import os #to check if vector db already exists
+from config import VECTOR_DB_PATH, EMBEDDING_MODEL
 
-db_location = "./chroma_clinic_db" # "./" : the location of this file. 
-embeddings = OllamaEmbeddings(model="mxbai-embed-large") #prepare the embeddings model (will convert data to vector)
+db_location = VECTOR_DB_PATH #location of this file. 
+embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL) #prepare the embeddings model (will convert data to vector)
 
 if os.path.exists(db_location): #if vector db already exists, make a connection to it
     vector_store = Chroma(  #connect to "clinic_faq" at "db_location" and use "embeddings" model. note: each location can consist more than 1 collection_name
@@ -17,7 +18,7 @@ else: #if not found, create new vector db
     #loader = only to prepare the txt reader(txt unread yet).
     loader = TextLoader("clinic_knowledge_base.txt", encoding="utf-8") #encoding="utf-8": Originally txt was bytes on the computer, but using utf-8 rules to convert it to char, then will store that char to documents (so the data in docs wont be in bytes but char)
     documents = loader.load() #use .load() to execute the loader then make a document to store it. Document is an object in python that consist page_content(main message) and metadata(notes, if user didnt input: will be {}), could add id if wanted to
-
+    print("Vector DB created")
     #to split long text to smaller chunks for llm (not great for llm if the text is too long)
     splitter = CharacterTextSplitter( #a method to split a text
         separator="\n---\n", #split everytime finds "\n---\n"

@@ -2,8 +2,9 @@ from langchain_ollama import OllamaLLM #the model of llm
 from langchain_core.prompts import ChatPromptTemplate 
 from vector import retriever, search_with_confidence
 from preprocessor import preprocess_query
+from config import LLM_MODEL, PHONE_NUMBER
 
-model = OllamaLLM(model="qwen2.5:14b")
+model = OllamaLLM(model=LLM_MODEL)
 
 #context n question is in {} bcs they will be used many times with a different context and question, so it can be modified when its converted to prompt object.
 template = """
@@ -21,7 +22,7 @@ ATURAN WAJIB (HARUS DIIKUTI):
 2. DILARANG menyebut "informasi di atas", "context", "database", atau istilah teknis apapun.
 3. DILARANG menambah, menebak, atau mengarang informasi. DO NOT guess. DO NOT assume.
 4. Jika jawaban untuk pertanyaan customer benar-benar TIDAK ADA di informasi diatas, jawab:
-  "Maaf kak, untuk info tersebut belum tersedia. Boleh tanya langsung via Whatsapp ke 0812-8888-7654."
+  "Maaf kak, untuk info tersebut belum tersedia. Boleh tanya langsung via Whatsapp ke {PHONE_NUMBER}."
 - Baca informasi dengan TELITI sebelum menjawab tidak tau 
 
 INSTRUKSI JAWABAN:
@@ -56,7 +57,7 @@ def get_response(question: str) -> str:
     
     #convert context from list of docs to a string, so ai could read effectively 
     context_text = "\n\n".join(doc.page_content for doc in context_docs) #for every doc in list of related docs, join them all to a string with \n\n as separator
-    result = chain.invoke({"context": context_text, "question": question}) #chain.invoke will run prompt | model, the prompt will be given to the model
+    result = chain.invoke({"context": context_text, "question": question, "PHONE_NUMBER": PHONE_NUMBER}) #chain.invoke will run prompt | model, the prompt will be given to the model
     response = result.content if hasattr(result, "content") else result #hasattr: python function that check if an object has an attributes or no. bcs result could be AIMessage(content:"hi") or "hi"
 
     return response
@@ -64,7 +65,7 @@ def get_response(question: str) -> str:
 if __name__ == "__main__":
     print("Chatbot Ready. Type 'q' to quit")
     while True:
-        question = input("Customer: ").strip() #.strip() = to clean any space like " ", \n, \t, etc
+        question = input("Customer: ").strip()
         if question == 'q':
             break
 

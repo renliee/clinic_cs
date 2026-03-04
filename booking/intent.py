@@ -1,7 +1,8 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-model = OllamaLLM(model="qwen2.5:14b") #the model of llm
+from config import LLM_MODEL
+model = OllamaLLM(model=LLM_MODEL) 
 
 prompt = ChatPromptTemplate.from_messages([   #method to make a great prompt to llm with system 
     ("system", """Kamu adalah classifier untuk customer service klinik.

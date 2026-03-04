@@ -3,12 +3,12 @@
 ## JAM BUKA / JAM OPERASIONAL / JADWAL BUKA / BUKA JAM BERAPA / HARI APA BUKA
 
 Jam buka klinik Bella:
-- Senin: buka jam 10:00 - 21:00
-- Selasa: buka jam 10:00 - 21:00
-- Rabu: buka jam 10:00 - 21:00
-- Kamis: buka jam 10:00 - 21:00
-- Jumat: buka jam 10:00 - 21:00
-- Sabtu: buka jam 09:00 - 20:00
+- Senin: buka jam 9:00 - 21:00
+- Selasa: buka jam 9:00 - 21:00
+- Rabu: buka jam 9:00 - 21:00
+- Kamis: buka jam 9:00 - 21:00
+- Jumat: buka jam 9:00 - 21:00
+- Sabtu: buka jam 10:00 - 20:00
 - Minggu: buka jam 10:00 - 17:00
 
 Klinik buka setiap hari termasuk Sabtu dan Minggu (weekend). Tidak ada hari libur mingguan.
@@ -36,7 +36,7 @@ Cabang Tangerang:
 - Alamat: Gading Serpong, Ruko Paramount Blok A No. 12
 - Area: Gading Serpong, Tangerang
 
-Cabang Bandung:
+Cabang Bandung:7
 - Alamat: Jl. Sukajadi No. 123
 - Area: dekat PVJ Bandung
 
@@ -45,7 +45,7 @@ Cabang Bandung:
 ## KONTAK / WHATSAPP / WA / NOMOR TELEPON / INSTAGRAM / IG
 
 Kontak Klinik Bella:
-- WhatsApp / WA: 0812-8888-7654
+- WhatsApp / WA: 087785391601
 - Instagram / IG: @bellaclinic.id
 - Untuk booking dan tanya-tanya bisa chat WA
 
@@ -163,7 +163,7 @@ Tidak ada yang 100% permanen kecuali laser hair removal.
 ## BOOKING / APPOINTMENT / RESERVASI / DAFTAR
 
 Cara booking di Klinik Bella:
-1. Chat WhatsApp ke 0812-8888-7654
+1. Chat WhatsApp ke 087785391600
 2. Kasih info: nama, treatment apa, pilih cabang, tanggal dan jam
 3. Admin konfirmasi slot tersedia
 4. Kalau treatment > Rp 5 juta, perlu DP 30%

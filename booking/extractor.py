@@ -3,7 +3,8 @@ from langchain_core.prompts import ChatPromptTemplate
 import json
 import re
 
-model = OllamaLLM(model="qwen2.5:14b")
+from config import LLM_MODEL
+model = OllamaLLM(model=LLM_MODEL)
 
 extractor_prompt = ChatPromptTemplate.from_messages([
 ("system", """
