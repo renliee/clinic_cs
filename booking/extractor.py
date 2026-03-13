@@ -4,7 +4,10 @@ import json
 import re
 
 from config import LLM_MODEL
+from logger import get_logger
+
 model = OllamaLLM(model=LLM_MODEL)
+logger = get_logger(__name__)
 
 extractor_prompt = ChatPromptTemplate.from_messages([
 ("system", """
@@ -48,8 +51,9 @@ extractor_chain = extractor_prompt | model
 def extract_slots(message: str) -> dict:
     try:
         result = extractor_chain.invoke({"message": message})
-        text = result.content if hasattr(result, "content") else str(result) #test = answer of ai in string
-        print("RAW LLM:", text)
+        text = result.content if hasattr(result, "content") else str(result) #text = answer of ai in string
+
+        logger.debug("Raw LLM output", extra={"output": text})
         clean = text.strip()
         try:
             #json.loads: parse literal json string to dictionary object and validate if the json is wrong or unclean
@@ -75,12 +79,11 @@ def extract_slots(message: str) -> dict:
                 pass
         
         #show that extraction failed and will return null json
-        print(f"Extractor Failed: Could not parse JSON from response")
-        print(f"Raw Text: {text[:300]}") #for debugging info, what llm answer
+        logger.warning("Extractor Failed: Could not parse JSON from response", extra={"output": text[:300]}) #extra = what llm answer
         return {**_empty_slots(), "_parse_error": True} # ** = copy "_empty_slots()" kw dict to this dict and add '"_parse_error": True' as a new kw and value
 
     except Exception as e: #if there is an unexpected error, return null json 
-        print(f"Error: {e}")
+        logger.error("Extractor unexpected error", extra={"error": str(e)}, exc_info=True)
         return {**_empty_slots(), "_parse_error": True} #will be used in handler.py
     
 #function to remove not needed strings, and try to return cleaned json only 

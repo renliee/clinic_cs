@@ -4,9 +4,12 @@ from datetime import datetime, timedelta
 
 from booking.intent import classify_intent
 from booking.extractor import extract_slots
-from booking.validator import validate_slots
+from booking.validator import validate_slots, validate_operating_hours
 from booking.session import BookingSession
 from booking.database import BookingDB
+
+from logger import get_logger
+logger = get_logger(__name__)
 
 active_sessions = {} #chat memory for an active session for every user
 
@@ -22,6 +25,7 @@ def handle_message(user_id: str, message: str) -> str:
     if session.is_active() and session.is_stale(): #if expired so next chat wont be out of context
         session.clear()
         active_sessions.pop(user_id, None) #delete user_id session from active_session, None as default
+        logger.info("Session expired and cleared", extra={"user_id": user_id})
         return "Halo kak! Sepertinya kita sempat terputus. Mau mulai booking baru?"
     
     session.last_activity = datetime.utcnow() #update last activity everytime user sent message
@@ -41,6 +45,7 @@ def handle_message(user_id: str, message: str) -> str:
         if ambig_time and (datetime.utcnow() - ambig_time > timedelta(minutes=30)): #if already ambiguous more than 30 minutes, cancel it
             session.time_ambiguous = None #NOTES: use "." to access the attributes of a class or to use a method of a class
             session.time_ambiguous_when = None
+            logger.info("Ambiguous time expired", extra={"user_id": user_id})
             return "Halo kak! Tadi kita lagi pilih jam, tapi sudah lama. Jam berapa kak?"
         
         #handle ambiguous
@@ -49,9 +54,6 @@ def handle_message(user_id: str, message: str) -> str:
             if resolved is not None: #user picked 
                 selected_time = resolved.get("jam")
                 existing_date = session.slots.get("tanggal")
-                
-                #if user had already mentioned date earlier
-                from booking.validator import validate_operating_hours
 
                 #convert string to time object without 'parse_datetime' from validator.py (bcs parse_datetime has a smart system that auto picked 19::00 instead of 07:00 bcs 07:00 is outside of operating hours) -> this block of code is for explicit time asked by user, autocorrect will ruin it
                 hour, minute = map(int, selected_time.split(':'))
@@ -67,12 +69,17 @@ def handle_message(user_id: str, message: str) -> str:
                 if not is_valid:
                     session.time_ambiguous = None
                     session.time_ambiguous_when = None
+                    logger.info(
+                        "Resolved ambiguous time was outside of operating hours",
+                        extra={"user_id": user_id, "selected_time": selected_time}
+                    )
                     return hours_error
 
                 #update if everything is valid
                 session.update({"jam": selected_time}) #update the user self.session.slots("jam"), self.errors, and self.active
                 session.time_ambiguous = None
                 session.time_ambiguous_when = None
+                logger.info("Ambiguous time was resolved", extra={"user_id": user_id, "selected_time": selected_time})
     
                 #continue the flow
                 missing = session.get_missing_slots() 
@@ -81,7 +88,7 @@ def handle_message(user_id: str, message: str) -> str:
                 return _show_confirmation(session)
             
             else: #user didnt choose valid index, show the options again
-                candidates = ambig.get("candidates", [])
+                candidates = ambig.get("candidates", [])    
                 minute = ambig.get("minute", 0)
                 n = len(candidates) 
                 options = "\n".join([
@@ -92,12 +99,13 @@ def handle_message(user_id: str, message: str) -> str:
     
     #classify user intent
     if session.is_active():
-        print(f"Active session: context aware")
+        logger.debug("Active session: context aware", extra={"user_id": user_id})
 
         #if user want to cancel
-        if re.search(r'\b(batal|batalkan|cancel|stop|ga jadi|gak jadi|gajadi|batalin|stop)\b', message, re.I):
+        if re.search(r'\b(batal|batalkan|cancel|stop|ga jadi|gak jadi|gajadi|batalin)\b', message, re.I):
             session.clear()
             active_sessions.pop(user_id, None) #delete user session from active_session
+            logger.info("Booking cancelled by user", extra={"user_id": user_id})
             return "Oke kak booking dibatalkan. Ada yang bisa saya bantu lagi?"
         
         #user want to edit (mid booking)
@@ -113,16 +121,16 @@ def handle_message(user_id: str, message: str) -> str:
 
         #FAQ interrupt while booking
         if re.search(FAQ_SPESIFIC, message, re.I) or (re.search(QUESTION_WORD, message, re.I)): 
-            print(f"FAQ interrupt detected")
+            logger.debug("FAQ interrupt detected", extra={"user_id": user_id})
             from rag import get_response
             faq_response = get_response(message)
             return f"{faq_response}\n\nMau lanjut booking kak?"
         
-        print("Treating as booking continuation")
+        logger.debug("Treating as booking continuation", extra={"user_id": user_id})
         return _handle_booking(session, message)
     
     intent = classify_intent(message)
-    print(f"INTENT Info: {intent}")
+    logger.info("Intent classified", extra={"user_id": user_id, "intent": intent})
     
     #should be after or before main session (if within, can cause ambiguity)
     if intent == "CHITCHAT":
@@ -225,6 +233,7 @@ def _handle_edit(session: BookingSession, message: str) -> str: #extract user's 
 
     if updates: 
         session.update(updates) #update the user self.session.slots, self.errors, and self.active
+        logger.info("Booking slots edited", extra={"user_id": session.user_id, "updates": updates})
         return f"Oke kak, diubah:\n" + "\n".join(updated_info) + "\n\nLanjut kak?"
     
     return "Mau ganti apa kak?" #fallback: user ask to edit a same value or user ask edit without saying a value to be edited, etc
@@ -236,6 +245,7 @@ def _confirm_booking(session: BookingSession, user_id: str) -> str: #save bookin
 
         session.clear() #clear the user session in active_sessions
         active_sessions.pop(user_id, None) #delete session after user confirmed
+        logger.info("Booking confirmed", extra={"user_id": user_id, "booking_id": booking_id})
         
         #return confirmation messages
         return f"""✅ Booking berhasil!
@@ -246,7 +256,7 @@ Tim kami akan konfirmasi via WhatsApp dalam beberapa jam ya kak.
 Terima kasih! 🙏"""
     
     except Exception as e:
-        print(f"Booking error: {e}")
+        logger.error("Booking confirmation failed", extra={"user_id": user_id, "error": str(e)}, exc_info=True)
         from config import PHONE_NUMBER
         return f"Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA {PHONE_NUMBER}"
 
@@ -254,7 +264,8 @@ Terima kasih! 🙏"""
 def _handle_booking(session: BookingSession, message: str) -> str:
     #1. EXTRACT
     new_slots = extract_slots(message)
-    print(f"Extracted message: {new_slots}") #debug extractor result
+    logger.debug("Slots extracted", extra={"user_id": session.user_id, "slots": new_slots}) #debug extractor result
+
     if new_slots.get("_parse_error"): #if extractor failed
         return "Maaf kak, saya gagal memproses pesan. Boleh tolong diulang lagi dengan lebih jelas?"
     
@@ -266,10 +277,11 @@ def _handle_booking(session: BookingSession, message: str) -> str:
 
     #2. VALIDATE
     validated, missing, errors = validate_slots(merged)
-    print(f"Validated: {validated}") #debug info
-    print(f"Missing: {missing}")
-    print(f"Errors: {errors}")
-
+    logger.debug(
+        "Validation result",
+        extra={"user_id": session.user_id, "validated": validated, "missing": missing, "errors": errors}
+    )
+ 
     #3. UPDATE (session.py)
     session.update(validated)
 
@@ -317,6 +329,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
         if not getattr(session, "time_ambiguous_when", None):
             session.time_ambiguous_when = datetime.utcnow()
         
+        logger.debug("Ambiguous time: asking user", extra={"user_id": session.user_id, "candidates": candidates})
         return f"Maksud kakak jam berapa ya?\n{options}\n\nBalas angka '1' atau '2' aja ya kak"
 
     #6. check if all slots is filled

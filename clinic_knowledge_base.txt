@@ -13,7 +13,7 @@ Jam buka klinik Bella:
 
 Klinik buka setiap hari termasuk Sabtu dan Minggu (weekend). Tidak ada hari libur mingguan.
 Hari Minggu tetap buka dari jam 10 pagi sampai jam 5 sore.
-Sabtu buka lebih pagi dari hari biasa, mulai jam 9 pagi.
+Sabtu dan minggu buka sedikit lebih siang dari hari biasa, mulai jam 10 pagi.
 
 ---
 

@@ -3,8 +3,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from vector import retriever, search_with_confidence
 from preprocessor import preprocess_query
 from config import LLM_MODEL, PHONE_NUMBER
+from logger import get_logger
 
 model = OllamaLLM(model=LLM_MODEL)
+logger = get_logger(__name__)
 
 #context n question is in {} bcs they will be used many times with a different context and question, so it can be modified when its converted to prompt object.
 template = """
@@ -47,13 +49,13 @@ LOW_CONFIDENCE = 0.5
 
 def get_response(question: str) -> str:
     clean_question = preprocess_query(question) #clean the user input 
-    print(f"Preprocessed: {clean_question}")
+    logger.debug("Query preprocessed", extra={"clean_question": clean_question})
 
     context_docs, confidence = search_with_confidence(clean_question) #get the similar docs and the confidence based on the question
-    print(f"Confidence: {confidence:.2f}")
+    logger.debug("RAG confidence", extra={"confidence": round(confidence, 2)})
 
     if confidence < LOW_CONFIDENCE: #if the question doesnt meet the minimum vector score, ask ai to dont answer
-        return "Maaf kak, saya kurang paham pertanyaannya. Boleh kak jelaskan maksudnya sedikit lagi? 😊"
+        return "Maaf kak, saya kurang paham pertanyaannya. Boleh kak jelaskan maksudnya sedikit lagi? "
     
     #convert context from list of docs to a string, so ai could read effectively 
     context_text = "\n\n".join(doc.page_content for doc in context_docs) #for every doc in list of related docs, join them all to a string with \n\n as separator

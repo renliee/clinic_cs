@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, time as dt_time #dt_time to make a time object in py
 from preprocessor import SLANG
 import re
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 VALID_LOCATIONS = {
     "jakarta": "Jakarta (Kemang)",
@@ -44,7 +47,9 @@ WORD_TO_NUMBER = {
     "tujuh": 7,
     "delapan": 8,
     "sembilan": 9,
-    "sepuluh": 10
+    "sepuluh": 10,
+    "sebelas": 11,
+    "dua belas": 12
 }
 
 #get the operating hours for some spesific date/day
@@ -161,12 +166,12 @@ def _parse_absolute_date(date_str:str, default_year: int) -> datetime.date:
             if month: #if month successfully is an int
                 return datetime(year, month, day).date() #return in datetime py obj format
     except Exception as e:
-        print(f"Parse Date Error: {e}")
+        logger.error("Failed to parse absolute date", extra={"input": date_str, "error": str(e)})
     
     return None #if parts < 2 or month not found in dict, return None
 
 #return datetime if valid, dict of hours candidate if unsure, None if invalid
-def _parse_time(time_str: str):
+def _parse_time(time_str: str) -> datetime.time:
     time_str = (time_str or "").lower().strip() #(time_str or "") : if time_str = None, then change it to "", so it wont error. bcs None.lower() occurs error
 
     WORD_TO_NUM_TIME = {
@@ -322,9 +327,11 @@ def validate_slots(slots: dict) -> tuple:
 
     #validate date/time
     if slots.get("tanggal") or slots.get("jam"):
-        print(f"[DEBUG] Input: tanggal={slots.get('tanggal')}, jam={slots.get('jam')}")
+        logger.debug("validate_slots input original", extra={"tanggal": slots.get('tanggal'), "jam": slots.get('jam')})
+    
         date_obj, time_obj, date_error = parse_datetime(slots.get("tanggal"), slots.get("jam"))
-        print(f"[DEBUG] Parsed: date_obj={date_obj}, time_obj={time_obj}, error={date_error}")
+        
+        logger.debug("validate_slots parsed", extra={"date_obj": str(date_obj), "time_obj": str(time_obj), "error": str(date_error)})
         
         #date_error could be None, dict(ambiguous time/invalid operating hours), or string (error occurs)
         if date_error:

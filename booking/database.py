@@ -1,6 +1,9 @@
 import sqlite3
 from datetime import datetime
 from pathlib import Path
+from logger import get_logger
+
+logger = get_logger(__name__) #logger is now logging object
 
 #BookingDB: SQLite database class for booking management that stores booking data and status tracking
 class BookingDB:
@@ -35,7 +38,7 @@ class BookingDB:
             )
             conn.commit() #permanently save the changes to db (sqlite3)
 
-        print(f"Database: Initialized at {self.db_path}") #note: db name = booking.db ; table name = bookings
+        logger.info("Database initialized", extra={"path": self.db_path}) #note: db name = booking.db ; table name = bookings
     
     def create_booking(self, user_id: str, slots: dict): #create booking (insert data), will return booking_id if valid
 
@@ -58,7 +61,7 @@ class BookingDB:
                     )
                 existed = cursor.fetchone()
                 if existed:
-                    print(f"Database -> Returning existing booking: {existed[0]}")
+                    logger.info("Returning existing booking", extra={"booking_id": existed[0]})
                     return existed[0]
                 
                 #insert without using booking id first. note: id will be incremented while executing "INSERT"
@@ -86,17 +89,17 @@ class BookingDB:
                 )
                 conn.commit()
 
-                print(f"Database: Created booking {booking_id} for user {user_id}")
+                logger.info("Booking created", extra={"booking_id": booking_id, "user_id": user_id})
                 return booking_id
 
         #if the data is wrong: NOT NULL but no value, same booking_id, invalid data type, etc      
         except sqlite3.IntegrityError as e: #use sqlite3 at the prefix bcs we only want to catch the error in database only
-            print(f"Database Error: Integrity error - {e}")
+            logger.error("Database integrity error", extra={"error": str(e)})
             raise ValueError(f"Booking gagal: Data tidak valid") #raise to the caller function to be handled, and change the error type to ValueError
         
         #if there is any other error
         except sqlite3.Error as e: 
-            print(f"Database Error: {e}")  
+            logger.error("Database error", extra={"error": str(e)})
             raise #raise to the caller function to be handled
 
     def _row_to_dict(self, cursor, row) -> dict: #convert the tuple info to dictionary
@@ -161,7 +164,7 @@ class BookingDB:
                     (now, booking_id)
                 )
             conn.commit() #officially updated the info
-            print(f"Database: Updated booking {booking_id} status to {status}")
+            logger.info("Booking status updated", extra={"booking_id": booking_id, "status": status})
     
     def get_pending_bookings(self) -> list: #get the list of pending bookings
         with sqlite3.connect(self.db_path) as conn:
@@ -184,7 +187,7 @@ class BookingDB:
                 (booking_id,)
             )
             conn.commit()
-            print(f"Database: Deleted booking {booking_id}")
+            logger.info("Booking deleted", extra={"booking_id": booking_id})
 
 #test
 if __name__ == "__main__":

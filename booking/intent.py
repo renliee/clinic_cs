@@ -2,7 +2,10 @@ from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 
 from config import LLM_MODEL
+from logger import get_logger
+
 model = OllamaLLM(model=LLM_MODEL) 
+logger = get_logger(__name__)
 
 prompt = ChatPromptTemplate.from_messages([   #method to make a great prompt to llm with system 
     ("system", """Kamu adalah classifier untuk customer service klinik.
@@ -29,21 +32,25 @@ def classify_intent(message: str) -> str:
 
         valid_intents = ["BOOKING", "FAQ", "CANCEL", "RESCHEDULE", "CHITCHAT", "UNCLEAR"]
         if intent not in valid_intents: #if there is not matched intent
-            print(f"Intent Warning: Got '{intent}', defaulting to UNCLEAR")
+            logger.warning("Unexpected intent value, defaulting to UNCLEAR", extra={"raw_intent": intent})
             return "UNCLEAR" #will clarify again to user
         return intent  
     
     except Exception as e: #if error occurs
-        print(f"Intent Error: {e}")
+        logger.error("Intent classification failed", extra={"error": str(e)}, exc_info=True)
         return "UNCLEAR" #will clarify again to user
 
+#not used now, bcs llm doing great
 def classify_intent_fallback(message: str) -> str:
     intent = classify_intent(message) #call llm to generate intent
+
     if intent != "UNCLEAR":
-        print(f"CLASSIFY: {intent}") #DEBUGGING ONLY, DELETE LATER
+        logger.debug("Intent fallback resolved", extra={"intent": intent})
         return intent
+    
     #if intent is "UNCLEAR":
     msg = message.lower()
+
     if "?" in msg:
         return "FAQ"
     if any(kw in msg for kw in ["halo", "hai", "hi", "hlo", "thanks", "terima kasih", "thank you", "makasih", "makasi"]): #any: 1 true = executed
