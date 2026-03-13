@@ -94,12 +94,12 @@ class BookingDB:
 
         #if the data is wrong: NOT NULL but no value, same booking_id, invalid data type, etc      
         except sqlite3.IntegrityError as e: #use sqlite3 at the prefix bcs we only want to catch the error in database only
-            logger.error("Database integrity error", extra={"error": str(e)})
+            logger.error("Database integrity error", extra={"error": str(e)}, exc_info=True)
             raise ValueError(f"Booking gagal: Data tidak valid") #raise to the caller function to be handled, and change the error type to ValueError
         
         #if there is any other error
         except sqlite3.Error as e: 
-            logger.error("Database error", extra={"error": str(e)})
+            logger.error("Database error", extra={"error": str(e)}, exc_info=True)
             raise #raise to the caller function to be handled
 
     def _row_to_dict(self, cursor, row) -> dict: #convert the tuple info to dictionary

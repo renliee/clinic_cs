@@ -166,7 +166,7 @@ def _parse_absolute_date(date_str:str, default_year: int) -> datetime.date:
             if month: #if month successfully is an int
                 return datetime(year, month, day).date() #return in datetime py obj format
     except Exception as e:
-        logger.error("Failed to parse absolute date", extra={"input": date_str, "error": str(e)})
+        logger.error("Failed to parse absolute date", extra={"input": date_str, "error": str(e)}, exc_info=True)
     
     return None #if parts < 2 or month not found in dict, return None
 
