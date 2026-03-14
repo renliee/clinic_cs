@@ -4,15 +4,16 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from config import LOG_LEVEL
 
-# --- Config ---
-LOG_DIR = Path("logs")
+#location of log folder and files
+LOG_DIR = Path("logs") 
 LOG_FILE = LOG_DIR / "clinic_cs.log"
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()      # override: LOG_LEVEL=DEBUG python main.py
-MAX_BYTES = 5 * 1024 * 1024                             # 5MB per file
-BACKUP_COUNT = 3                                        # keep last 3 rotated files
 
-# Known standard LogRecord fields — anything outside this is treated as extra
+MAX_BYTES = 5 * 1024 * 1024 # 5 mb each file
+BACKUP_COUNT = 3 #3 backup files, total = 4
+
+#internal fields of logging, out of these treated as
 _STANDARD_FIELDS = {
     "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
     "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
@@ -20,55 +21,57 @@ _STANDARD_FIELDS = {
     "processName", "process", "message", "taskName",
 }
 
-class JsonFormatter(logging.Formatter): #inherit from logging.Formatter
-
+#file formatter
+class JsonFormatter(logging.Formatter): #this class inherit from logging.Formatter
+    #the function must use "format" as a name and LogRecord as param, bcs logger will search that keyword
     def format(self, record: logging.LogRecord) -> str:
         log_obj = {
-            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z",
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z", # T: separator sign; Z: signifies time is in utc + 0.
             "level": record.levelname,
             "module": record.name,
             "msg": record.getMessage(),
         }
-        # Attach exception info if present
-        if record.exc_info:
+        #if error from except
+        if record.exc_info: 
             log_obj["exc"] = self.formatException(record.exc_info)
-        # Attach extra fields passed via extra={} — whitelist guards against leaking internal fields
+        #add extra info to json
         for key, val in record.__dict__.items():
             if key not in _STANDARD_FIELDS and not key.startswith("_"):
-                log_obj[key] = val 
-        return json.dumps(log_obj, ensure_ascii=False) #json.dumps connvert dict to json string
-
-# --- Console Formatter (human readable) ---
+                log_obj[key] = val
+        return json.dumps(log_obj, ensure_ascii=False) #json.dumps: convert py object tp json string, json.loads vice versa
+    
+#console formatter
 CONSOLE_FMT = "%(asctime)s [%(levelname)-8s] %(name)-20s | %(message)s"
 DATE_FMT = "%H:%M:%S"
 
-# --- Setup (runs once at import) ---
+#to set up only once when importing
 _initialized = False
 
-def _setup() -> None:
+def _setup():
     global _initialized
     if _initialized:
         return
     _initialized = True
 
-    LOG_DIR.mkdir(exist_ok=True)
+    LOG_DIR.mkdir(exist_ok=True) #make logs dir
 
-    root = logging.getLogger()
-    root.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+    root = logging.getLogger() #call the main root using getLogger, root will have a child of handler 
+    root.setLevel(getattr(logging, LOG_LEVEL, logging.INFO)) #set the level to be shown, INFO as default
 
-    # Console handler
-    console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter(CONSOLE_FMT, datefmt=DATE_FMT))
-    root.addHandler(console)
+    #set where the files are going to and set the formatter, then add handler to main root
+    console_handler = logging.StreamHandler() #handler to terminal
+    console_handler.setFormatter(logging.Formatter(CONSOLE_FMT, datefmt=DATE_FMT))
+    root.addHandler(console_handler)
 
-    # Rotating file handler (JSON)
-    file_h = logging.handlers.RotatingFileHandler(
+    #handler to rotating files
+    file_handler = logging.handlers.RotatingFileHandler(
         LOG_FILE, maxBytes=MAX_BYTES, backupCount=BACKUP_COUNT, encoding="utf-8"
     )
-    file_h.setFormatter(JsonFormatter())
-    root.addHandler(file_h)
+    file_handler.setFormatter(JsonFormatter())
+    root.addHandler(file_handler)
 
 _setup()
 
+#flow: make a handler at main root, when get_logger(__name__), check if there is any handler on that module or no. if no, go & check the main root which is there is. Then that LogRecord will be handled to file and console.
 def get_logger(name: str) -> logging.Logger:
-    return logging.getLogger(name)
+    return logging.getLogger(name) 

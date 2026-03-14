@@ -10,5 +10,9 @@ venv/
 *.db
 chroma_clinic_db/
 
+#logger files
+logs/
+*.log
+
 #project's note
 notes.txt
