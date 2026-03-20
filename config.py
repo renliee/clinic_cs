@@ -9,4 +9,4 @@ VECTOR_DB_PATH = os.getenv("VECTOR_DB_PATH")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper() #INFO as default
 REDIS_URL = os.getenv("REDIS_URL")
-SESSION_TTL_SECONDS = os.getenv("SESSION_TTL_SECONDS")
+SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "1800"))

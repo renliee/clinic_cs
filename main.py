@@ -82,7 +82,6 @@ def handle_message(user_id: str, message: str) -> str:
             else: #user didnt choose valid index, show the options again
                 candidates = ambig.get("candidates", [])    
                 minute = ambig.get("minute", 0)
-                n = len(candidates) 
                 options = "\n".join([
                             f"{i+1}. {h:02d}:{minute:02d}" #i+1: convert index to general nums
                             for i, h in enumerate(candidates) #enum: generate index number for every candidates
