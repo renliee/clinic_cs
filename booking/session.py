@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
+import json
 
 class BookingSession:
-    
-    #ATTRIBUTES of the class
+
     def __init__(self, user_id: str): #manage each user booking data by their unique id (use "user_id" as input)
         self.user_id = user_id
         self.slots = {
@@ -19,8 +19,6 @@ class BookingSession:
         self.errors = [] #store all the erros occured 
         self.time_ambiguous = None #store the info of ambiguous time (status, candidates, minute), will be asked to user before update to self.slots
         self.time_ambiguous_when = None
-
-    #METHOD of the class
 
     def update(self, validated_slots: dict, errors: list = None): #validated_slots and errors is from validate_slots function from validator.py
         self.last_activity = datetime.utcnow()
@@ -92,6 +90,33 @@ class BookingSession:
             f"• Nama: {s.get('nama', '?')}\n"
         )
         return summary
+    
+    def to_json(self) -> str:
+        data = {
+            "user_id": self.user_id,
+            "slots": self.slots,
+            "active": self.active,
+            "created_at": self.created_at.isoformat(), #isoformat: convert py time object to json 
+            "last_activity": self.last_activity.isoformat(),
+            "errors": self.errors,
+            "time_ambiguous": self.time_ambiguous, #dict or None, already json serializable
+            "time_ambiguous_when": self.time_ambiguous_when.isoformat() if self.time_ambiguous_when else None, #None.isoformat() will cause error
+        }
+        return json.dumps(data, ensure_ascii=False)
+    
+    @classmethod
+    def from_json(cls, raw: str) -> "BookingSession":
+        d = json.loads(raw)
+        session = cls(d["user_id"]) #cls = BookingSession, initialize session as BookingSession with spesific user id
+        session.slots = d["slots"]
+        session.active = d["active"]
+        session.created_at = datetime.fromisoformat(d["created_at"]) #datetime.fromisoformat(): convert json to py time object
+        session.last_activity = datetime.fromisoformat(d["last_activity"])
+        session.errors = d["errors"]
+        session.time_ambiguous = d.get("time_ambiguous") #None if key missing
+        raw_when = d.get("time_ambiguous_when") #can be None so use get
+        session.time_ambiguous_when = datetime.fromisoformat(raw_when) if raw_when else None #fromisoformat(None) cause error
+        return session
     
     #magic method: similar to "__str__" but "__repr__" is for developer (debug/check), while "__str__" for user
     def __repr__(self): 

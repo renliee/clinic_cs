@@ -1,51 +1,42 @@
 from typing import Optional, Dict #data type hint
 import re 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 
 from booking.intent import classify_intent
 from booking.extractor import extract_slots
 from booking.validator import validate_slots, validate_operating_hours
 from booking.session import BookingSession
+from booking.session_store import RedisSessionStore
 from booking.database import BookingDB
 
 from logger import get_logger
 logger = get_logger(__name__)
 
-active_sessions = {} #chat memory for an active session for every user
-
+store = RedisSessionStore() #as an object to use redis store method
 db = BookingDB() #initialize the db connection
 
 def handle_message(user_id: str, message: str) -> str:
     
-    if user_id not in active_sessions: #if no info yet, add the user id and its slots info
-        active_sessions[user_id] = BookingSession(user_id)
-
-    session = active_sessions[user_id] #session consist the attributs of BookingSession 
-    
-    if session.is_active() and session.is_stale(): #if expired so next chat wont be out of context
-        session.clear()
-        active_sessions.pop(user_id, None) #delete user_id session from active_session, None as default
-        logger.info("Session expired and cleared", extra={"user_id": user_id})
-        return "Halo kak! Sepertinya kita sempat terputus. Mau mulai booking baru?"
-    
-    session.last_activity = datetime.utcnow() #update last activity everytime user sent message
+    session = store.get_or_create(user_id) #make session or get user session at redis
     
     ambig = getattr(session, "time_ambiguous", None) #getattr: get the attributes value, if null wont crash
     ambig_time = getattr(session, "time_ambiguous_when", None) #get the time when ambiguous was noticed
     existing_date = session.slots.get("tanggal")
-    
+
     if ambig: 
         #if no date yet, ask for date first (wont ask user to pick 1 or 2)
         if not existing_date:
             session.time_ambiguous = None
             session.time_ambiguous_when = None
+            store.save(session) #save every edited session to redis
             return "Tanggal belum dipilih kak, silakan pilih tanggal dulu ya"
         
         #ambiguous expired (> 30 minutes)
         if ambig_time and (datetime.utcnow() - ambig_time > timedelta(minutes=30)): #if already ambiguous more than 30 minutes, cancel it
             session.time_ambiguous = None #NOTES: use "." to access the attributes of a class or to use a method of a class
-            session.time_ambiguous_when = None
+            session.time_ambiguous_when = None 
             logger.info("Ambiguous time expired", extra={"user_id": user_id})
+            store.save(session)
             return "Halo kak! Tadi kita lagi pilih jam, tapi sudah lama. Jam berapa kak?"
         
         #handle ambiguous
@@ -57,7 +48,6 @@ def handle_message(user_id: str, message: str) -> str:
 
                 #convert string to time object without 'parse_datetime' from validator.py (bcs parse_datetime has a smart system that auto picked 19::00 instead of 07:00 bcs 07:00 is outside of operating hours) -> this block of code is for explicit time asked by user, autocorrect will ruin it
                 hour, minute = map(int, selected_time.split(':'))
-                from datetime import time as dt_time
                 time_obj = dt_time(hour, minute)
 
                 #convert string to date object
@@ -73,6 +63,7 @@ def handle_message(user_id: str, message: str) -> str:
                         "Resolved ambiguous time was outside of operating hours",
                         extra={"user_id": user_id, "selected_time": selected_time}
                     )
+                    store.save(session)
                     return hours_error
 
                 #update if everything is valid
@@ -80,7 +71,8 @@ def handle_message(user_id: str, message: str) -> str:
                 session.time_ambiguous = None
                 session.time_ambiguous_when = None
                 logger.info("Ambiguous time was resolved", extra={"user_id": user_id, "selected_time": selected_time})
-    
+                store.save(session)
+
                 #continue the flow
                 missing = session.get_missing_slots() 
                 if missing:
@@ -104,14 +96,16 @@ def handle_message(user_id: str, message: str) -> str:
         #if user want to cancel
         if re.search(r'\b(batal|batalkan|cancel|stop|ga jadi|gak jadi|gajadi|batalin)\b', message, re.I):
             session.clear()
-            active_sessions.pop(user_id, None) #delete user session from active_session
+            store.delete(user_id) #delete user session at redis
             logger.info("Booking cancelled by user", extra={"user_id": user_id})
             return "Oke kak booking dibatalkan. Ada yang bisa saya bantu lagi?"
         
         #user want to edit (mid booking)
         if _is_edit_request(message):
-            return _handle_edit(session, message)
-        
+            response = _handle_edit(session, message) 
+            store.save(session) #save edited session to redis
+            return response #return response (string)
+         
         #confirmation: if user says "yes" then confirm the booking
         if session.is_complete() and _is_confirmation(message):
             return _confirm_booking(session, user_id) #save to DB and clear session
@@ -127,7 +121,9 @@ def handle_message(user_id: str, message: str) -> str:
             return f"{faq_response}\n\nMau lanjut booking kak?"
         
         logger.debug("Treating as booking continuation", extra={"user_id": user_id})
-        return _handle_booking(session, message)
+        response = _handle_booking(session, message)
+        store.save(session) #save change to redis
+        return response
     
     intent = classify_intent(message)
     logger.info("Intent classified", extra={"user_id": user_id, "intent": intent})
@@ -139,7 +135,9 @@ def handle_message(user_id: str, message: str) -> str:
     #user want to book an appointment
     if intent == "BOOKING":
         session.active = True 
-        return _handle_booking(session, message)
+        response = _handle_booking(session, message)
+        store.save(session) 
+        return response
 
     #FAQ before bookings flow
     if intent == "FAQ": 
@@ -244,7 +242,7 @@ def _confirm_booking(session: BookingSession, user_id: str) -> str: #save bookin
         booking_id = db.create_booking(user_id, booking_data) #save to DB and will return booking_id (raise error is handled by the try block)
 
         session.clear() #clear the user session in active_sessions
-        active_sessions.pop(user_id, None) #delete session after user confirmed
+        store.delete(user_id) #delete session after user confirmed
         logger.info("Booking confirmed", extra={"user_id": user_id, "booking_id": booking_id})
         
         #return confirmation messages
@@ -293,7 +291,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
     
     if session.has_errors(): #if there is errors, show to user
         errors = session.get_errors()
-        cleaned_errors = [e.replace("Maaf kak, ", "").replace("Maaf kak, ", "") for e in errors]
+        cleaned_errors = [e.replace("Maaf kak, ", "") for e in errors]
 
         if len(cleaned_errors) == 1:
             error_msg = errors[0]
@@ -301,11 +299,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
             error_msg = "Maaf kak, ada beberapa informasi yang perlu diperbaiki:\n" + "\n".join(f"• {e}" for e in cleaned_errors)
             
         session.clear_errors() #clear errors after showing the errors to user
-        return error_msg
-    
-    # if "tanggal" in missing:
-    #     session.time_ambiguous = None 
-    #     session.time_ambiguous_when = None
+        return error_msg  
         
     #5. handle ambiguous time (ask user to clarify)
     if getattr(session, "time_ambiguous", None): #if there is time_ambiguous

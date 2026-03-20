@@ -3,6 +3,7 @@ from .intent import classify_intent, classify_intent_fallback
 from .extractor import extract_slots
 from .validator import validate_slots, parse_datetime
 from .session import BookingSession
+from .session_store import RedisSessionStore
 from .database import BookingDB
 
 #this file name (__init__.py) is needed to convert 'booking' folder into a python package.
@@ -15,5 +16,6 @@ __all__ = [
     'validate_slots', 
     'parse_datetime', 
     'BookingSession', 
+    'RedisSessionStore'
     'BookingDB'
 ]
