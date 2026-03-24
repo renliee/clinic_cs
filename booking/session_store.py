@@ -1,5 +1,4 @@
 import redis
-from typing import Optional
 from urllib.parse import urlparse
 
 from config import REDIS_URL, SESSION_TTL_SECONDS
@@ -45,7 +44,7 @@ class RedisSessionStore:
         return f"{SESSION_PREFIX}{user_id}"
     
     #return BookingSession if there is session, None if there isnt
-    def get(self, user_id: str) -> Optional[BookingSession]:
+    def get(self, user_id: str) -> BookingSession | None:
         try:
             raw = self.client.get(self._key_session(user_id))
             if not raw:

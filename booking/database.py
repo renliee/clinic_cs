@@ -166,15 +166,18 @@ class BookingDB:
             conn.commit() #officially updated the info
             logger.info("Booking status updated", extra={"booking_id": booking_id, "status": status})
     
-    def get_pending_bookings(self) -> list: #get the list of pending bookings
+    #get all bookings filtered by its status, if no status then return all bookings
+    def get_bookings_status(self, status: str = None) -> list:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-
-            cursor.execute(
-                "SELECT * FROM bookings WHERE status = ? ORDER BY created_at DESC",
-                ('PENDING',)
-            )
-            rows = cursor.fetchall() #return list of tuple
+            if status:
+                cursor.execute(
+                    "SELECT * FROM bookings WHERE status = ? ORDER BY created_at DESC",
+                    (status,)
+                )
+            else:
+                cursor.execute("SELECT * FROM bookings ORDER BY created_at DESC")
+            rows = cursor.fetchall() #rows: list of tuples
 
             return [self._row_to_dict(cursor, row) for row in rows] #return list of dict (1 dict = 1 booking)
     

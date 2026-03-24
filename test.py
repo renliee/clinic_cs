@@ -1,4 +1,4 @@
-from main import handle_message
+from chatbot import handle_message
 
 user_id = "test_user"
 

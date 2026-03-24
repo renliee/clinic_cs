@@ -41,7 +41,7 @@ class JsonFormatter(logging.Formatter): #this class inherit from logging.Formatt
         return json.dumps(log_obj, ensure_ascii=False) #json.dumps: convert py object tp json string, json.loads vice versa
     
 #console formatter
-CONSOLE_FMT = "%(asctime)s [%(levelname)-8s] %(name)-20s | %(message)s"
+CONSOLE_FMT = "%(asctime)s [%(levelname)-8s] %(name)-22s | %(message)s"
 DATE_FMT = "%H:%M:%S"
 
 #to set up only once when importing
@@ -69,6 +69,10 @@ def _setup():
     )
     file_handler.setFormatter(JsonFormatter())
     root.addHandler(file_handler)
+
+    #set level on httpx and httpcore to only show log after INFO
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)    
 
 _setup()
 
