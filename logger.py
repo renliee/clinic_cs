@@ -25,7 +25,7 @@ _STANDARD_FIELDS = {
 class JsonFormatter(logging.Formatter): #this class inherit from logging.Formatter
     #the function must use "format" as a name and LogRecord as param, bcs logger will search that keyword
     def format(self, record: logging.LogRecord) -> str:
-        log_obj = {
+        log_obj = { 
             "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z", # T: separator sign; Z: signifies time is in utc + 0.
             "level": record.levelname,
             "module": record.name,

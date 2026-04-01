@@ -16,6 +16,6 @@ __all__ = [
     'validate_slots', 
     'parse_datetime', 
     'BookingSession', 
-    'RedisSessionStore'
+    'RedisSessionStore',
     'BookingDB'
 ]

@@ -19,7 +19,7 @@ class ChatResponse(BaseModel):
     reply: str
     user_id: str
     quick_replies: list[QuickReply] = [] #[] as a default answer if there is no QuickReply button
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat()) #lambda: function without a name that could be write inline without a separated "def"
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat()) #lambda: function without a name that could be write in single line. 
 
 #every bookings data return by backend (mirrors DB column except for 'id' column)
 class Booking(BaseModel):
