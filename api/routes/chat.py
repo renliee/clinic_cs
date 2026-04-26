@@ -37,30 +37,31 @@ def _generate_quick_replies(reply: str) -> list[QuickReply]:
     if "oke kak booking dibatalkan" in text:
         return [
             QuickReply(label="Booking Baru", payload="Mau booking treatment"),
-            QuickReply(label="Cek Harga", payload="Berapa harga treatment?"),
+            QuickReply(label="Cek Harga", payload="Berapa aja harga treatment?"),
         ]
 
     #FAQ interrupt when mid booking flow
     if "mau lanjut booking" in text:
         return [
-            QuickReply(label="Lanjut Booking", payload="lanjut"),
-            QuickReply(label="Tanya Lagi", payload="mau tanya lagi"),
+            QuickReply(label="Lanjut Booking", payload="Lanjut"),
+            QuickReply(label="Tanya Lagi", payload="Mau tanya lagi"),
         ]
 
     #UNCLEAR intent
     if "mau tanya info atau booking treatment" in text:
         return [
             QuickReply(label="Booking Treatment", payload="Mau booking treatment"),
-            QuickReply(label="Tanya Info", payload="mau tanya info"),
+            QuickReply(label="Tanya Info", payload="Mau tanya info"),
         ]
 
     #greetings from llm (intent: CHITCHAT)
     if "apa ada yang bisa saya bantu" in text:
         return [
             QuickReply(label="Booking Treatment", payload="Mau booking treatment"),
-            QuickReply(label="Cek Harga", payload="Berapa harga treatment?"),
-            QuickReply(label="Jam Buka", payload="Jam buka klinik kapan aja?"),
-            QuickReply(label="Lokasi", payload="Klinik ada dimana aja?"),
+            QuickReply(label="Jenis Treatment", payload="Ada treatment apa aja?"),
+            QuickReply(label="Cek Harga", payload="Berapa aja harga treatment?"),
+            QuickReply(label="Jam Buka", payload="Jam operasional klinik setiap hari kapan aja?"),
+            QuickReply(label="Lokasi", payload="Klinik lokasinya ada dimana aja?"),
         ]
 
     #default: no buttons (bot is asking for specific info like name, date, etc)

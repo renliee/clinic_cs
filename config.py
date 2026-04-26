@@ -10,3 +10,4 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "mxbai-embed-large")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper() #INFO as default
 REDIS_URL = os.getenv("REDIS_URL")
 SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "1800"))
+VITE_API_URL = os.getenv("VITE_API_URL")

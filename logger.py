@@ -34,13 +34,13 @@ class JsonFormatter(logging.Formatter): #this class inherit from logging.Formatt
         #if error from except
         if record.exc_info: 
             log_obj["exc"] = self.formatException(record.exc_info)
-        #add extra info to json
+        #add extra info to json (will be shown in files)
         for key, val in record.__dict__.items():
             if key not in _STANDARD_FIELDS and not key.startswith("_"):
                 log_obj[key] = val
         return json.dumps(log_obj, ensure_ascii=False) #json.dumps: convert py object tp json string, json.loads vice versa
     
-#console formatter
+#console formatter (does not show the extra info)
 CONSOLE_FMT = "%(asctime)s [%(levelname)-8s] %(name)-22s | %(message)s"
 DATE_FMT = "%H:%M:%S"
 
