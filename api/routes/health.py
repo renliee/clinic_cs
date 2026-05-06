@@ -6,7 +6,7 @@ Checks redis and ollama availability.
 import httpx #HTTP request to interact with other app
 from fastapi import APIRouter
 from models.schemas import HealthResponse
-from config import REDIS_URL, LLM_MODEL
+from config import settings
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -32,7 +32,7 @@ async def health_check():
 def _check_redis() -> str:
     try:
         import redis
-        client = redis.from_url(REDIS_URL, decode_responses=True) #connect with redis
+        client = redis.from_url(settings.redis_url, decode_responses=True) #connect with redis
         client.ping() #return connection error if redis doesnt response with PONG
         return "ok"
     except Exception as e:
@@ -46,9 +46,9 @@ def _check_ollama() -> str:
 
         if response.status_code == 200:
             models = [m["name"] for m in response.json().get("models", [])] #fetch every llm's name 
-            if any(LLM_MODEL in m for m in models):
+            if any(settings.llm_model in m for m in models):
                 return "ok"
-            return f"Ollama model {LLM_MODEL} not loaded yet"
+            return f"Ollama model {settings.llm_model} not loaded yet"
         
         return f"Ollama returned {response.status_code}"
     

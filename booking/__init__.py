@@ -4,7 +4,7 @@ from .extractor import extract_slots
 from .validator import validate_slots, parse_datetime
 from .session import BookingSession
 from .session_store import RedisSessionStore
-from .database import BookingDB
+from .repository import BookingRepository, to_dict
 
 #this file name (__init__.py) is needed to convert 'booking' folder into a python package.
 
@@ -17,5 +17,6 @@ __all__ = [
     'parse_datetime', 
     'BookingSession', 
     'RedisSessionStore',
-    'BookingDB'
+    'BookingRepository',
+    'to_dict',
 ]

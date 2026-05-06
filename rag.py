@@ -2,10 +2,10 @@ from langchain_ollama import OllamaLLM #the model of llm
 from langchain_core.prompts import ChatPromptTemplate 
 from vector import retriever, search_with_confidence
 from preprocessor import preprocess_query
-from config import LLM_MODEL, PHONE_NUMBER
+from config import settings
 from logger import get_logger
 
-model = OllamaLLM(model=LLM_MODEL)
+model = OllamaLLM(model=settings.llm_model)
 logger = get_logger(__name__)
 
 #context n question is in {} bcs they will be used many times with a different context and question, so it can be modified when its converted to prompt object.
@@ -59,7 +59,7 @@ def get_response(question: str) -> str:
     
     #convert context from list of docs to a string, so ai could read effectively 
     context_text = "\n\n".join(doc.page_content for doc in context_docs) #for every doc in list of related docs, join them all to a string with \n\n as separator
-    result = chain.invoke({"context": context_text, "question": question, "PHONE_NUMBER": PHONE_NUMBER}) #chain.invoke will run prompt | model, the prompt will be given to the model
+    result = chain.invoke({"context": context_text, "question": question, "PHONE_NUMBER": settings.phone_number}) #chain.invoke will run prompt | model, the prompt will be given to the model
     response = result.content if hasattr(result, "content") else result #hasattr: python function that check if an object has an attributes or no. bcs result could be AIMessage(content:"hi") or "hi"
 
     return response

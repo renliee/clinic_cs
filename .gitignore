@@ -1,10 +1,20 @@
 # Python cache
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyc
 
 # environment
+.venv/
 venv/
 .env
+.env.local
+.env.*.local
+
+#frontend
+node_modules/
+dist/
+.vite/
 
 # database and vector db
 *.db
@@ -16,3 +26,7 @@ logs/
 
 #project's note
 notes.txt
+
+#IDE
+.vscode/
+.idea/

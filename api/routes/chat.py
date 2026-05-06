@@ -76,7 +76,7 @@ async def chat(req: ChatRequest):
     from chatbot import handle_message
 
     try:
-        reply = handle_message(req.user_id, req.message)
+        reply = await handle_message(req.user_id, req.message)
     except Exception as e:
         logger.error("handle_message failed", extra={"user_id": req.user_id, "error": str(e)}, exc_info=True)
         reply = "Maaf kak, terjadi kesalahan. Coba lagi dalam beberapa saat ya."

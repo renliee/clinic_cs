@@ -1,10 +1,10 @@
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 
-from config import LLM_MODEL
+from config import settings
 from logger import get_logger
 
-model = OllamaLLM(model=LLM_MODEL) 
+model = OllamaLLM(model=settings.llm_model) 
 logger = get_logger(__name__)
 
 prompt = ChatPromptTemplate.from_messages([   #method to make a great prompt to llm with system 

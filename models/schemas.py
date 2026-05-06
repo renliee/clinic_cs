@@ -1,4 +1,4 @@
-"""Pydantic schemas for API request and response validation"""
+"""Pydantic schemas for API request (Backend) and response validation"""
 
 from pydantic import BaseModel, Field
 from datetime import datetime

@@ -6,15 +6,16 @@ from booking.extractor import extract_slots
 from booking.validator import validate_slots, validate_operating_hours
 from booking.session import BookingSession
 from booking.session_store import RedisSessionStore
-from booking.database import BookingDB
+from db.database import AsyncSessionLocal
+from booking.repository import BookingRepository
 
+from config import settings
 from logger import get_logger
 logger = get_logger(__name__)
 
 store = RedisSessionStore() #as an object to use redis store method
-db = BookingDB() #initialize the db connection
 
-def handle_message(user_id: str, message: str) -> str:
+async def handle_message(user_id: str, message: str) -> str:
     
     session = store.get_or_create(user_id) #make session or get user session at redis
     
@@ -106,7 +107,7 @@ def handle_message(user_id: str, message: str) -> str:
          
         #confirmation: if user says "yes" then confirm the booking
         if session.is_complete() and _is_confirmation(message):
-            return _confirm_booking(session, user_id) #save to DB and clear session
+            return await _confirm_booking(session, user_id) #save to DB and clear session
 
         FAQ_SPESIFIC = r'\b(berapa|harga|jam buka|jam tutup|alamat|apa itu)\b'
         QUESTION_WORD = r'\b(kapan|dimana|bagaimana|kenapa|apa|gimana|mengapa)\b'
@@ -144,8 +145,7 @@ def handle_message(user_id: str, message: str) -> str:
     
     #if user want to reschedule
     if intent == "RESCHEDULE":
-        from config import PHONE_NUMBER
-        return f"Untuk reschedule, bisa tolong hubungi nomor WA {PHONE_NUMBER} ya kak"
+        return f"Untuk reschedule, bisa tolong hubungi nomor WA {settings.phone_number} ya kak"
     
     #if unclear
     return "Maaf kak saya kurang paham. Mau tanya info atau booking treatment?"
@@ -234,10 +234,36 @@ def _handle_edit(session: BookingSession, message: str) -> str: #extract user's 
     
     return "Mau ganti apa kak?" #fallback: user ask to edit a same value or user ask edit without saying a value to be edited, etc
 
-def _confirm_booking(session: BookingSession, user_id: str) -> str: #save booking to DB and clear session
+async def _confirm_booking(session: BookingSession, user_id: str) -> str: #save booking to DB and clear session
     try:
         booking_data = session.to_dict() #convert BookingSession to clean dictionary
-        booking_id = db.create_booking(user_id, booking_data) #save to DB and will return booking_id (raise error is handled by the try block)
+
+        #parse tanggal and jam from string to object (postgres store date/time as time object)
+        tanggal = datetime.strptime(booking_data["tanggal"], "%Y-%m-%d").date()
+        hour, minute = map(int, booking_data["jam"].split(":")) # "10:30" -> ["10", "30"] -> [10, 30]; hours = 10, minute = 30
+        jam = dt_time(hour, minute) 
+
+        async with AsyncSessionLocal() as db_session:
+            existing = await BookingRepository.find_active_duplicate(
+                db_session, user_id, tanggal, jam
+            )
+            
+            #handle user that book a booking twice at the same time of meet up
+            if existing is not None:
+                booking_id = existing.booking_id
+                logger.info("Returning existing booking", extra={"booking_id": booking_id, "user_id": user_id})
+            else:
+                booking = await BookingRepository.create(
+                    db_session,
+                    user_id=user_id,
+                    nama=booking_data["nama"],
+                    lokasi=booking_data["lokasi"],
+                    treatment=booking_data["treatment"],
+                    tanggal=tanggal,
+                    jam=jam,
+                )
+                await db_session.commit()  #save permanently to DB 
+                booking_id = booking.booking_id
 
         session.clear() #clear the user session in active_sessions
         store.delete(user_id) #delete session after user confirmed
@@ -253,8 +279,7 @@ Terima kasih! """
     
     except Exception as e:
         logger.error("Booking confirmation failed", extra={"user_id": user_id, "error": str(e)}, exc_info=True)
-        from config import PHONE_NUMBER
-        return f"Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA {PHONE_NUMBER}"
+        return f"Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA {settings.phone_number}"
 
 #HANDLE BOOKING: extract messagae -> validate -> update -> ask missing
 def _handle_booking(session: BookingSession, message: str) -> str:

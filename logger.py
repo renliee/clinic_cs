@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from config import LOG_LEVEL
+from config import settings
 
 #location of log folder and files
 LOG_DIR = Path("logs") 
@@ -56,7 +56,7 @@ def _setup():
     LOG_DIR.mkdir(exist_ok=True) #make logs dir
 
     root = logging.getLogger() #call the main root using getLogger, root will have a child of handler 
-    root.setLevel(getattr(logging, LOG_LEVEL, logging.INFO)) #set the level to be shown, INFO as default
+    root.setLevel(getattr(logging, settings.log_level, logging.INFO)) #set the level to be shown, INFO as default
 
     #set where the files are going to and set the formatter, then add handler to main root
     console_handler = logging.StreamHandler() #handler to terminal

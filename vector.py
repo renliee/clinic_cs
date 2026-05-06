@@ -3,13 +3,13 @@ from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader #TextLoader: to read/load txt files
 from langchain_text_splitters import CharacterTextSplitter #splitter text for llm
 import os #to check if vector db already exists
-from config import VECTOR_DB_PATH, EMBEDDING_MODEL
+from config import settings
 from logger import get_logger
 
 logger = get_logger(__name__)
 
-db_location = VECTOR_DB_PATH #location of this file. 
-embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL) #prepare the embeddings model (will convert data to vector)
+db_location = settings.vector_db_path #location of this file. 
+embeddings = OllamaEmbeddings(model=settings.embedding_model) #prepare the embeddings model (will convert data to vector)
 
 if os.path.exists(db_location): #if vector db already exists, make a connection to it
     vector_store = Chroma(  #connect to "clinic_faq" at "db_location" and use "embeddings" model. note: each location can consist more than 1 collection_name
