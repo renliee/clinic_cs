@@ -1,6 +1,7 @@
 """
 SQLAlchemy async engine + session management.
 Engine is global (1 per app).
+NOTES: cant use 'get_db' to get db conn outside of fastapi, use 'AsyncSessionLocal() as session' instead
 """
 
 from typing import AsyncIterator

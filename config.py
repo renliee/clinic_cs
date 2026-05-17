@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     session_ttl_seconds: int = 1800
     log_level: str = "INFO"
 
+    #jwt
+    jwt_secret_key: str
+    jwt_algorithm: str = "HS256" #use HS256 instead of RS256 bcs this codebase consist only 1 backend service, not multiple services
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
+    admin_email: str | None = None
+    admin_password: str | None = None
+
     #@property to access method below like an attributes ( class.att only, without () )
     @property
     def database_url(self) -> str:

@@ -6,7 +6,7 @@ Run: uvicorn main:app --reload --host 0.0.0.0 --port 8000
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.routes import chat, bookings, health
+from api.routes import chat, bookings, health, auth
 from api.deps import get_db, get_store
 from logger import get_logger
 
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
     """Initialize dependencies on startup and clean up things after shutdown"""
     logger.info("Starting Clinic CS API")
 
-    #will raise error on start up if Redis/DB is down
+    #connect to DB and Redis server, will raise error on start up if Redis/DB is down
     get_db()
     get_store()
 
@@ -54,6 +54,7 @@ app.add_middleware(
 app.include_router(chat.router)
 app.include_router(bookings.router)
 app.include_router(health.router)
+app.include_router(auth.router)
 
 #default FastAPI info
 @app.get("/")

@@ -9,6 +9,7 @@ from booking.session_store import RedisSessionStore
 from db.database import AsyncSessionLocal
 from booking.repository import BookingRepository
 
+from api.deps import get_stats_cache
 from config import settings
 from logger import get_logger
 logger = get_logger(__name__)
@@ -265,8 +266,15 @@ async def _confirm_booking(session: BookingSession, user_id: str) -> str: #save 
                 await db_session.commit()  #save permanently to DB 
                 booking_id = booking.booking_id
 
+                #every change made to DB, invalidate redis cache stats. (will automatically refresh if admin choose to click stats endpoints)
+                try:
+                    stats_cache = get_stats_cache()
+                    await stats_cache.invalidate() #invalidate the redis cache, bcs it has became a stale data due to this DB changes
+                except Exception:
+                    logger.warning("Failed to invalidate stats cache after chatbot booking", exc_info=True)
+
         session.clear() #clear the user session in active_sessions
-        store.delete(user_id) #delete session after user confirmed
+        store.delete(user_id) #delete session in redis after user confirmed
         logger.info("Booking confirmed", extra={"user_id": user_id, "booking_id": booking_id})
         
         #return confirmation messages
@@ -281,7 +289,7 @@ Terima kasih! """
         logger.error("Booking confirmation failed", extra={"user_id": user_id, "error": str(e)}, exc_info=True)
         return f"Maaf kak, terjadi kesalahan. Bisa coba lagi atau hubungi WA {settings.phone_number}"
 
-#HANDLE BOOKING: extract messagae -> validate -> update -> ask missing
+#HANDLE BOOKING: extract messagae -> vlidate -> update -> ask missing
 def _handle_booking(session: BookingSession, message: str) -> str:
     #1. EXTRACT
     new_slots = extract_slots(message)
@@ -293,7 +301,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
     #prevent None value, especially for the date
     clean_new_slots = {key: value for key, value in new_slots.items() if value is not None} 
 
-    #re-validate all: merge user session with new input (if hour isnt within the operational hours and there is no date at user new message, merge with the date at user session. bcs validate operating hours need both date and time)
+    #revalidate all: merge user session with new input (if hour isnt within the operational hours and there is no date at user new message, merge with the date at user session. bcs validate operating hours need both date and time)
     merged = {**session.slots, **clean_new_slots} #UNIQUE case = user edit date from A to B so the operational hours now is different, then will check the hours again so could notify it its outside of the new operating hours
 
     #2. VALIDATE

@@ -4,14 +4,15 @@
 - Return orm Booking object | None 
 """
 
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Sequence
 
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession #AsyncSession: middleman between db and python (method: add, delete, execute, rollback, flush, commit,get)
-
+    
 from logger import get_logger
+#Booking is orm database table that point to 'bookings' table
 from models.booking import Booking
 from models.schemas import BookingStatus
 
@@ -101,6 +102,46 @@ class BookingRepository:
         result = await session.execute(data)
         return result.scalar_one_or_none() 
     
+    @staticmethod
+    async def count_today(session: AsyncSession) -> int:
+        """count bookings created today (in UTC)"""
+        today = datetime.now(timezone.utc).date()
+        data = (
+            select(func.count()) #SELECT COUNT(*)
+            .select_from(Booking) #FROM bookings
+            .where(Booking.tanggal == today) 
+        )
+        result = await session.execute(data)
+        return result.scalar_one() 
+
+    @staticmethod
+    async def count_this_week(session: AsyncSession) -> int:
+        """count bookings in current week (monday to sunday, in UTC)."""
+        today = datetime.now(timezone.utc).date() #set today's object information in utc
+        #today.weekday() converts day object to int (Monday=0, Sunday=6)
+        monday = today - timedelta(days=today.weekday()) 
+        sunday = monday + timedelta(days=6)
+
+        data = (
+            select(func.count())
+            .select_from(Booking)
+            .where(Booking.tanggal >= monday)
+            .where(Booking.tanggal <= sunday)
+        )
+        result = await session.execute(data)
+        return result.scalar_one()
+
+    @staticmethod
+    async def get_stats(session: AsyncSession) -> dict:
+        """return the stats summary"""
+        return {
+            "today_bookings": await BookingRepository.count_today(session),
+            "this_week_total": await BookingRepository.count_this_week(session),
+            "pending_count": await BookingRepository.count_by_status(session, BookingStatus.PENDING),
+            "confirmed_count": await BookingRepository.count_by_status(session, BookingStatus.CONFIRMED),
+        }
+    
+
     #WRITE
     @staticmethod
     async def create(
@@ -146,7 +187,7 @@ class BookingRepository:
         Return the updated booking or None if booking not found.
         """
         booking = await BookingRepository.get_by_booking_id(session, booking_id)
-        if booking_id is None:
+        if booking is None:
             return None
         
         booking.status = status

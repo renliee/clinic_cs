@@ -61,3 +61,46 @@ class HealthResponse(BaseModel):
     redis: str
     ollama: str
     version: str
+
+
+"""Pydantic schemas for API request (Auth) and response validation"""
+from uuid import UUID
+from models.user import UserRole
+
+class LoginRequest(BaseModel):
+    """login credentials submitted by the frontend"""
+    email: str = Field(..., min_length=3, max_length=255, description="User email")
+    password: str = Field(..., min_length=1, max_length=255, description="User password")
+
+class TokenResponse(BaseModel):
+    """
+    Response from /login and /refresh (backend) to frontend.
+    Access token is returned here so frontend will store in memory.
+    """
+    access_token: str 
+    token_type: str = "bearer" #bearer: standard OAuth convension, tell frontend that this is bearer type that carry token
+    expires_in: int #access token TTL in seconds, help frontend schedule refresh
+
+class UserResponse(BaseModel):
+    """
+    user representation for API response.
+    never include hashed_password, schemas wont leak it.
+    we dont use model_config = {"extra": "ignore"} bcs Pydantic reads the ORM object by pulling specific attributes by name (so other field wont cause error)
+    """
+    model_config = {"from_attributes": True} #let pydantic read an orm object instead of its default: dictionary
+
+    id: UUID
+    email: str
+    role: UserRole
+    is_active: bool
+    created_at: datetime
+    last_login_at: datetime | None
+
+
+"""Pydantic schemas for admin stats schemas"""
+class StatsResponse(BaseModel):
+    """stats response (from backend to frontend) for the admin dashboard overview"""
+    today_bookings: int
+    this_week_total: int
+    pending_count: int
+    confirmed_count: int
