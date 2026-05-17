@@ -270,7 +270,8 @@ async def _confirm_booking(session: BookingSession, user_id: str) -> str: #save 
                 try:
                     stats_cache = get_stats_cache()
                     await stats_cache.invalidate() #invalidate the redis cache, bcs it has became a stale data due to this DB changes
-                except Exception:
+                except Exception: 
+                    #let it be, worst case is the stats cache delayed 30 secs
                     logger.warning("Failed to invalidate stats cache after chatbot booking", exc_info=True)
 
         session.clear() #clear the user session in active_sessions
