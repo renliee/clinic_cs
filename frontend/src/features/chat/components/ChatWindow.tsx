@@ -1,13 +1,15 @@
 import { useState, useRef, useEffect} from "react";
-import ChatBubble from "@/components/chat/ChatBubble";
-import ChatInput from "@/components/chat/ChatInput";
-import type { ChatMessage, ChatResponse } from "@/types/chat";
-import QuickReplies from "@/components/chat/QuickReplies";
-import TypingIndicator from "@/components/chat/TypingIndicator";
-import WelcomeScreen from "@/components/chat/WelcomeScreen";
+import ChatBubble from "@/features/chat/components/ChatBubble";
+import ChatInput from "@/features/chat/components/ChatInput";
+import type { ChatMessage, ChatResponse } from "@/features/chat/types";
+import QuickReplies from "@/features/chat/components/QuickReplies";
+import TypingIndicator from "@/features/chat/components/TypingIndicator";
+import WelcomeScreen from "@/features/chat/components/WelcomeScreen";
 
 //every change on useState variable triggers render from react (render runs all the code, but render returns old value on useRef)
 //react renders (execute all its changed useState) only when the code isnt being run (code ends or in await mode)
+
+console.log("VITE ENV:", import.meta.env);
 
 const ChatWindow = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([
@@ -43,7 +45,7 @@ const ChatWindow = () => {
 
         try{
             //await here make react to renders changed useState above (setIsLoading and setMessages) 
-            const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/chat`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"}, //tell http the type of data to be sent
                 body: JSON.stringify({ //convert to json string (http only accept string)

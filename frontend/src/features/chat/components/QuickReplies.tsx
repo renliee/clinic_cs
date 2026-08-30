@@ -1,4 +1,4 @@
-import type { QuickReply } from "@/types/chat";
+import type { QuickReply } from "@/features/chat/types";
 
 interface QuickRepliesProps {
     quickReplies: QuickReply[]; 

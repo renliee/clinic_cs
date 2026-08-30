@@ -1,4 +1,4 @@
-import type { ChatMessage } from "@/types/chat"; //@ is "/src" in tsconfig.app.json
+import type { ChatMessage } from "@/features/chat/types"; //@ is "/src" in tsconfig.app.json
 
 interface ChatBubbleProps {
     message: ChatMessage;
