@@ -83,7 +83,7 @@ class TokenResponse(BaseModel):
 
 class UserResponse(BaseModel):
     """
-    user representation for API response.
+    user representation for API response, used at "me" dashboard information also to recognize user's role while using the Frontend.
     never include hashed_password, schemas wont leak it.
     we dont use model_config = {"extra": "ignore"} bcs Pydantic reads the ORM object by pulling specific attributes by name (so other field wont cause error)
     """
