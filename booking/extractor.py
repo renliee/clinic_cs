@@ -20,7 +20,11 @@ CRITICAL EXTRACTION RULES:
 
 Extract informasi ini:
 - lokasi: ONLY if user says city name (Jakarta/Bekasi/Tangerang/Bandung/Kemang)
-- treatment: ANY city or area name user mentions (Jakarta, Surabaya, Kemang, Tangerang, etc)
+- treatment: ONLY if user mentions a treatment or a body/face concern
+  (Facial, Facial Glow, Filler Bibir, Botox Rahang, Tarik Benang, Laser,
+  Slimming, DNA Salmon, dll). Extract the words the user actually used.
+  DO NOT expand a category into a specific variant.
+  Generic words like "treatment", "booking", "perawatan" are NOT treatments.
 - tanggal: ONLY if user says date (besok, lusa, 5 Januari, dll)
 - jam: Extract EXACTLY what user says about time. DO NOT convert to 24-hour format.(jam 6 sore, 14:00, 2 sore)
 - nama: ONLY if user says "nama saya..." or explicit name
@@ -40,6 +44,15 @@ Output: {{"lokasi": null, "treatment": null, "tanggal": null, "jam": "14:00", "n
 
 Input: "booking facial bekasi besok jam 2 sore nama Dewi"
 Output: {{"lokasi": "bekasi", "treatment": "facial", "tanggal": "besok", "jam": "2 sore", "nama": "Dewi"}}
+
+Input: "Mau booking treatment"
+Output: {{"lokasi": null, "treatment": null, "tanggal": null, "jam": null, "nama": null}}
+
+Input: "saya mau booking dong"
+Output: {{"lokasi": null, "treatment": null, "tanggal": null, "jam": null, "nama": null}}
+
+Input: "mau facial"
+Output: {{"lokasi": null, "treatment": "facial", "tanggal": null, "jam": null, "nama": null}}
 
 CRITICAL: Output ONLY valid JSON object. No explanation, no markdown, no ```json.
 Format: {{"lokasi": ..., "treatment": ..., "tanggal": ..., "jam": ..., "nama": ...}}

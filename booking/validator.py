@@ -1,9 +1,17 @@
 from datetime import datetime, timedelta, time as dt_time #dt_time to make a time object in py
+from zoneinfo import ZoneInfo
 from preprocessor import SLANG
 import re
 from logger import get_logger
 
 logger = get_logger(__name__)
+
+JAKARTA = ZoneInfo("Asia/Jakarta")
+
+def now_wib() -> datetime:
+    """Current wall clock time in Jakarta. Use for all business logic."""
+    return datetime.now(JAKARTA)
+
 
 VALID_LOCATIONS = {
     "jakarta": "Jakarta (Kemang)",
@@ -52,6 +60,11 @@ WORD_TO_NUMBER = {
     "dua belas": 12
 }
 
+BULAN = ["Januari","Februari","Maret","April","Mei","Juni",
+         "Juli","Agustus","September","Oktober","November","Desember"]
+HARI = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu","Minggu"]
+
+
 #get the operating hours for some spesific date/day
 def _get_operating_hours(date_obj: datetime.date):
     weekday = date_obj.weekday() #return 0-6, 0 is monday, 6 is sunday 
@@ -69,12 +82,12 @@ def _get_operating_hours(date_obj: datetime.date):
     return hours["open"], hours["close"], day_name
 
 
-#return (date_obj, time_obj, None) if valid. return (None, None, "error message") if bad format or date in past
+#return (date_obj, time_obj, None) if valid. return (None, None, "error message") if bad format or date in past.
 #return (date_obj/None, None, {"status":"ambiguous_time", "candidates":[], "minute":m}) if ambiguous: parser could pick/multiple valid hours
-#return (date_obj/None, None, {"status":"no_valid_hours", "open":.., "close":.., "day_name":..}) if no candidates fits operating hours for that date
+#note: "no_valid_hours" status is handled in validate_slots but never returned here, the candidate vs operating-hours filter that would produce it is Phase 4.3 work, not built yet.
 
 def parse_datetime(date_str: str, time_str: str = None) -> tuple: #default if there's no input for time_str = None 
-    today = datetime.utcnow().date() #.now() = time now until millisec, but just take the date using date()
+    today = now_wib().date() #WIB, not UTC. Jakarta is UTC+7. 
 
     #PARSE THE DATE
     date_obj = None
@@ -328,7 +341,7 @@ def validate_slots(slots: dict) -> tuple:
     #validate date/time
     if slots.get("tanggal") or slots.get("jam"):
         logger.debug("validate_slots input original", extra={"tanggal": slots.get('tanggal'), "jam": slots.get('jam')})
-    
+
         date_obj, time_obj, date_error = parse_datetime(slots.get("tanggal"), slots.get("jam"))
         
         logger.debug("validate_slots parsed", extra={"date_obj": str(date_obj), "time_obj": str(time_obj), "error": str(date_error)})
@@ -348,7 +361,7 @@ def validate_slots(slots: dict) -> tuple:
  
         if date_obj: #if there is a valid date, save it to validated
             validated["tanggal"] = date_obj.strftime("%Y-%m-%d")
-            validated["tanggal_display"] = date_obj.strftime("%d %B %Y")
+            validated["tanggal_display"] = f"{HARI[date_obj.weekday()]}, {date_obj.day} {BULAN[date_obj.month - 1]} {date_obj.year}"
         else: #if there is no valid date
             if slots.get("tanggal"): #there is a date info
                 if not date_error: #should use this, bcs will keep checking even after the "if date_error" lines
@@ -385,4 +398,6 @@ def validate_slots(slots: dict) -> tuple:
     else:
         missing.add("nama")
 
-    return validated, list(missing), errors
+    #keep the order of the slots to be consistent
+    SLOT_ORDER = ["treatment", "lokasi", "tanggal", "jam", "nama"]
+    return validated, [s for s in SLOT_ORDER if s in missing], errors
