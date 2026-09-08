@@ -1,17 +1,10 @@
 from datetime import datetime, timedelta, time as dt_time #dt_time to make a time object in py
-from zoneinfo import ZoneInfo
 from preprocessor import SLANG
 import re
 from logger import get_logger
+from timeutils import now_wib
 
 logger = get_logger(__name__)
-
-JAKARTA = ZoneInfo("Asia/Jakarta")
-
-def now_wib() -> datetime:
-    """Current wall clock time in Jakarta. Use for all business logic."""
-    return datetime.now(JAKARTA)
-
 
 VALID_LOCATIONS = {
     "jakarta": "Jakarta (Kemang)",

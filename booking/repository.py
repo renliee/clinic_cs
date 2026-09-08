@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession #AsyncSession: middleman between db and python (method: add, delete, execute, rollback, flush, commit,get)
     
 from logger import get_logger
+from timeutils import now_wib
 #Booking is orm database table that point to 'bookings' table
 from models.booking import Booking
 from models.schemas import BookingStatus
@@ -105,7 +106,7 @@ class BookingRepository:
     @staticmethod
     async def count_today(session: AsyncSession) -> int:
         """count bookings created today (in UTC)"""
-        today = datetime.now(timezone.utc).date()
+        today = now_wib().date()
         data = (
             select(func.count()) #SELECT COUNT(*)
             .select_from(Booking) #FROM bookings
@@ -117,7 +118,7 @@ class BookingRepository:
     @staticmethod
     async def count_this_week(session: AsyncSession) -> int:
         """count bookings in current week (monday to sunday, in UTC)."""
-        today = datetime.now(timezone.utc).date() #set today's object information in utc
+        today = now_wib().date() #WIB civil date. Booking.tanggal is a plain DATE written from now_wib()
         #today.weekday() converts day object to int (Monday=0, Sunday=6)
         monday = today - timedelta(days=today.weekday()) 
         sunday = monday + timedelta(days=6)
