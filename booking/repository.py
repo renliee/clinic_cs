@@ -196,7 +196,7 @@ class BookingRepository:
             booking.notes = notes
         #set the confirmed time
         if status == BookingStatus.CONFIRMED and booking.confirmed_at is None:
-            booking.confirmed_at = datetime.utcnow()
+            booking.confirmed_at = datetime.now(timezone.utc)
 
         await session.flush() #flush the changes now, wait for commit at the caller
         return booking #return booking object with that new status

@@ -1,7 +1,7 @@
 """Pydantic schemas for API request (Backend) and response validation"""
 
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum #to validate only valid answer
 
 #request chat from frontend (user)
@@ -19,7 +19,7 @@ class ChatResponse(BaseModel):
     reply: str
     user_id: str
     quick_replies: list[QuickReply] = [] #[] as a default answer if there is no QuickReply button
-    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat()) #lambda: function without a name that could be write in single line. 
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat()) #lambda: function without a name that could be write in single line. 
 
 #every bookings data return by backend (mirrors DB column except for 'id' column)
 class Booking(BaseModel):

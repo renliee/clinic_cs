@@ -1,6 +1,6 @@
 """CHATBOT.py"""
 import re 
-from datetime import datetime, timedelta, time as dt_time
+from datetime import datetime, timedelta, timezone, time as dt_time
 
 from booking.intent import classify_intent
 from booking.extractor import extract_slots
@@ -34,7 +34,7 @@ async def handle_message(user_id: str, message: str) -> str:
             return "Tanggal belum dipilih kak, silakan pilih tanggal dulu ya"
         
         #ambiguous expired (> 30 minutes)
-        if ambig_time and (datetime.utcnow() - ambig_time > timedelta(minutes=30)): #if already ambiguous more than 30 minutes, cancel it
+        if ambig_time and (datetime.now(timezone.utc) - ambig_time > timedelta(minutes=30)): #if already ambiguous more than 30 minutes, cancel it
             session.time_ambiguous = None #NOTES: use "." to access the attributes of a class or to use a method of a class
             session.time_ambiguous_when = None 
             logger.info("Ambiguous time expired", extra={"user_id": user_id})
@@ -354,7 +354,7 @@ def _handle_booking(session: BookingSession, message: str) -> str:
 
         #if there is no info about when the ambiguous started at
         if not getattr(session, "time_ambiguous_when", None):
-            session.time_ambiguous_when = datetime.utcnow()
+            session.time_ambiguous_when = datetime.now(timezone.utc)
         
         logger.debug("Ambiguous time: asking user", extra={"user_id": session.user_id, "candidates": candidates})
         return f"Maksud kakak jam berapa ya?\n{options}\n\nBalas angka '1' atau '2' aja ya kak"

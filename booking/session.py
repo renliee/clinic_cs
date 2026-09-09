@@ -1,4 +1,7 @@
-from datetime import datetime, timedelta
+"""All timestamps in this file are in UTC, not WIB civil dates (Timezone doesnt matter for substraction or timestamp at internal info). 
+Booking.tanggal and admin stats is the only field that needs WIB bcs both are used for date-specific calculations, see timeutils.py"""
+
+from datetime import datetime, timedelta, timezone
 import json
 
 class BookingSession:
@@ -14,21 +17,21 @@ class BookingSession:
             "nama": None
         }
         self.active = False #false id booking has not started yet or already done
-        self.created_at = datetime.utcnow() #extra info
-        self.last_activity = datetime.utcnow()
+        self.created_at = datetime.now(timezone.utc) #extra info
+        self.last_activity = datetime.now(timezone.utc)
         self.errors = [] #store all the erros occured 
         self.time_ambiguous = None #store the info of ambiguous time (status, candidates, minute), will be asked to user before update to self.slots
         self.time_ambiguous_when = None
 
     def update(self, validated_slots: dict, errors: list = None): #validated_slots and errors is from validate_slots function from validator.py
-        self.last_activity = datetime.utcnow()
+        self.last_activity = datetime.now(timezone.utc)
 
         #update the newest version of the slots        
         for key, value in validated_slots.items():
             if key == "_time_ambiguous": #if ambiguous, save to self.time_ambiguous (dont save to self.slots)
                 if not errors: #only update ambiguous if all valid, so user wont get the second phase of ambiguous message after fixing errors 
                     self.time_ambiguous = value
-                    self.time_ambiguous_when = datetime.utcnow()
+                    self.time_ambiguous_when = datetime.now(timezone.utc)
             else:
                 if isinstance(value, str): #if the value is a string, clean it
                     value = value.strip()
@@ -55,7 +58,7 @@ class BookingSession:
         return self.active
     
     def is_stale(self): #check if user conversation/session stale or not
-        return datetime.utcnow() - self.last_activity > timedelta(minutes=30)
+        return datetime.now(timezone.utc) - self.last_activity > timedelta(minutes=30)
 
     def has_errors(self) -> bool: #check if the booking has error or no
         return len(self.errors) > 0 #return True / False
