@@ -1,7 +1,7 @@
 """
 Time helpers.
-Business logic (dates customers pick, dashboard day/week windows) runs on WIB.
-Audit instants and token expiry stay UTC. see auth/ and repository.confirmed_at.
+Business logic (dates customers pick, admin stats dashboard) runs on WIB.
+Audit instants (session.py) and token expiry stay UTC. see auth/, repository.confirmed_at and session.py. 
 """
 
 from datetime import datetime
